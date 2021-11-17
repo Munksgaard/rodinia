@@ -14,6 +14,11 @@ git annex enableremote erda.dk
 git annex get
 ```
 
+## Formatting
+
+All C-like source files should be formatted with `ident`, using the style
+specified in [.indent.pro](.indent.pro).
+
 ## The old README has been included below.
 
 
