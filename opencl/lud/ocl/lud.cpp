@@ -280,21 +280,99 @@ int main(int argc, char *argv[]) {
 	return -1;
     }
 
-    /* beginning of timing point */
-    stopwatch_start(&sw);
-    err =
-	clEnqueueWriteBuffer(cmd_queue, d_m, 1, 0,
-			     matrix_dim * matrix_dim * sizeof(float), m, 0, 0,
-			     0);
-    if (err != CL_SUCCESS) {
-	printf("ERROR: clEnqueueWriteBuffer d_m (size:%d) => %d\n",
-	       matrix_dim * matrix_dim, err);
-	return -1;
-    }
+    int runs = 10;
 
-    int i = 0;
-    for (i = 0; i < matrix_dim - BLOCK_SIZE; i += BLOCK_SIZE) {
+    for (int run = 0; run < runs + 1; run++) {
+	err =
+	    clEnqueueWriteBuffer(cmd_queue, d_m, 1, 0,
+				 matrix_dim * matrix_dim * sizeof(float), m, 0,
+				 0, 0);
+	if (err != CL_SUCCESS) {
+	    printf("ERROR: clEnqueueWriteBuffer d_m (size:%d) => %d\n",
+		   matrix_dim * matrix_dim, err);
+	    return -1;
+	}
 
+	/* beginning of timing point */
+	stopwatch_start(&sw);
+
+	int i = 0;
+	for (i = 0; i < matrix_dim - BLOCK_SIZE; i += BLOCK_SIZE) {
+
+	    clSetKernelArg(diagnal, 0, sizeof(void *), (void *)&d_m);
+	    clSetKernelArg(diagnal, 1,
+			   sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
+			   (void *)NULL);
+	    clSetKernelArg(diagnal, 2, sizeof(cl_int), (void *)&matrix_dim);
+	    clSetKernelArg(diagnal, 3, sizeof(cl_int), (void *)&i);
+
+	    size_t global_work1[3] = { BLOCK_SIZE, 1, 1 };
+	    size_t local_work1[3] = { BLOCK_SIZE, 1, 1 };
+
+	    err =
+		clEnqueueNDRangeKernel(cmd_queue, diagnal, 2, NULL,
+				       global_work1, local_work1, 0, 0, 0);
+	    if (err != CL_SUCCESS) {
+		printf
+		    ("ERROR:  diagnal clEnqueueNDRangeKernel()=>%d failed\n",
+		     err);
+		return -1;
+	    }
+
+	    clSetKernelArg(perimeter, 0, sizeof(void *), (void *)&d_m);
+	    clSetKernelArg(perimeter, 1,
+			   sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
+			   (void *)NULL);
+	    clSetKernelArg(perimeter, 2,
+			   sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
+			   (void *)NULL);
+	    clSetKernelArg(perimeter, 3,
+			   sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
+			   (void *)NULL);
+	    clSetKernelArg(perimeter, 4, sizeof(cl_int), (void *)&matrix_dim);
+	    clSetKernelArg(perimeter, 5, sizeof(cl_int), (void *)&i);
+
+	    size_t global_work2[3] =
+		{ BLOCK_SIZE * 2 * ((matrix_dim - i) / BLOCK_SIZE - 1), 1,
+		1
+	    };
+	    size_t local_work2[3] = { BLOCK_SIZE * 2, 1, 1 };
+
+	    err =
+		clEnqueueNDRangeKernel(cmd_queue, perimeter, 2, NULL,
+				       global_work2, local_work2, 0, 0, 0);
+	    if (err != CL_SUCCESS) {
+		printf
+		    ("ERROR:  perimeter clEnqueueNDRangeKernel()=>%d failed\n",
+		     err);
+		return -1;
+	    }
+
+	    clSetKernelArg(internal, 0, sizeof(void *), (void *)&d_m);
+	    clSetKernelArg(internal, 1,
+			   sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
+			   (void *)NULL);
+	    clSetKernelArg(internal, 2, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
+			   (void *)NULL);
+	    clSetKernelArg(internal, 3, sizeof(cl_int), (void *)&matrix_dim);
+	    clSetKernelArg(internal, 4, sizeof(cl_int), (void *)&i);
+
+	    size_t global_work3[3] =
+		{ BLOCK_SIZE * ((matrix_dim - i) / BLOCK_SIZE - 1),
+		BLOCK_SIZE * ((matrix_dim - i) / BLOCK_SIZE - 1), 1
+	    };
+	    size_t local_work3[3] = { BLOCK_SIZE, BLOCK_SIZE, 1 };
+
+	    err =
+		clEnqueueNDRangeKernel(cmd_queue, internal, 2, NULL,
+				       global_work3, local_work3, 0, 0, 0);
+	    if (err != CL_SUCCESS) {
+		printf
+		    ("ERROR:  internal clEnqueueNDRangeKernel()=>%d failed\n",
+		     err);
+		return -1;
+	    }
+	}
 	clSetKernelArg(diagnal, 0, sizeof(void *), (void *)&d_m);
 	clSetKernelArg(diagnal, 1, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
 		       (void *)NULL);
@@ -303,7 +381,6 @@ int main(int argc, char *argv[]) {
 
 	size_t global_work1[3] = { BLOCK_SIZE, 1, 1 };
 	size_t local_work1[3] = { BLOCK_SIZE, 1, 1 };
-
 	err =
 	    clEnqueueNDRangeKernel(cmd_queue, diagnal, 2, NULL, global_work1,
 				   local_work1, 0, 0, 0);
@@ -313,80 +390,24 @@ int main(int argc, char *argv[]) {
 	    return -1;
 	}
 
-	clSetKernelArg(perimeter, 0, sizeof(void *), (void *)&d_m);
-	clSetKernelArg(perimeter, 1, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
-		       (void *)NULL);
-	clSetKernelArg(perimeter, 2, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
-		       (void *)NULL);
-	clSetKernelArg(perimeter, 3, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
-		       (void *)NULL);
-	clSetKernelArg(perimeter, 4, sizeof(cl_int), (void *)&matrix_dim);
-	clSetKernelArg(perimeter, 5, sizeof(cl_int), (void *)&i);
-
-	size_t global_work2[3] =
-	    { BLOCK_SIZE * 2 * ((matrix_dim - i) / BLOCK_SIZE - 1), 1, 1 };
-	size_t local_work2[3] = { BLOCK_SIZE * 2, 1, 1 };
+	/* end of timing point */
+	stopwatch_stop(&sw);
 
 	err =
-	    clEnqueueNDRangeKernel(cmd_queue, perimeter, 2, NULL, global_work2,
-				   local_work2, 0, 0, 0);
+	    clEnqueueReadBuffer(cmd_queue, d_m, 1, 0,
+				matrix_dim * matrix_dim * sizeof(float), m, 0,
+				0, 0);
 	if (err != CL_SUCCESS) {
-	    printf("ERROR:  perimeter clEnqueueNDRangeKernel()=>%d failed\n",
-		   err);
+	    printf("ERROR: clEnqueueReadBuffer  d_m (size:%d) => %d\n",
+		   matrix_dim * matrix_dim, err);
 	    return -1;
 	}
-
-	clSetKernelArg(internal, 0, sizeof(void *), (void *)&d_m);
-	clSetKernelArg(internal, 1, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
-		       (void *)NULL);
-	clSetKernelArg(internal, 2, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
-		       (void *)NULL);
-	clSetKernelArg(internal, 3, sizeof(cl_int), (void *)&matrix_dim);
-	clSetKernelArg(internal, 4, sizeof(cl_int), (void *)&i);
-
-	size_t global_work3[3] =
-	    { BLOCK_SIZE * ((matrix_dim - i) / BLOCK_SIZE - 1),
-BLOCK_SIZE * ((matrix_dim - i) / BLOCK_SIZE - 1), 1 };
-	size_t local_work3[3] = { BLOCK_SIZE, BLOCK_SIZE, 1 };
-
-	err =
-	    clEnqueueNDRangeKernel(cmd_queue, internal, 2, NULL, global_work3,
-				   local_work3, 0, 0, 0);
-	if (err != CL_SUCCESS) {
-	    printf("ERROR:  internal clEnqueueNDRangeKernel()=>%d failed\n",
-		   err);
-	    return -1;
+	clFinish(cmd_queue);
+	if (run != 0) {
+	    printf("Time consumed (microseconds): %lf\n",
+		   1000000 * get_interval_by_sec(&sw));
 	}
     }
-    clSetKernelArg(diagnal, 0, sizeof(void *), (void *)&d_m);
-    clSetKernelArg(diagnal, 1, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE,
-		   (void *)NULL);
-    clSetKernelArg(diagnal, 2, sizeof(cl_int), (void *)&matrix_dim);
-    clSetKernelArg(diagnal, 3, sizeof(cl_int), (void *)&i);
-
-    size_t global_work1[3] = { BLOCK_SIZE, 1, 1 };
-    size_t local_work1[3] = { BLOCK_SIZE, 1, 1 };
-    err =
-	clEnqueueNDRangeKernel(cmd_queue, diagnal, 2, NULL, global_work1,
-			       local_work1, 0, 0, 0);
-    if (err != CL_SUCCESS) {
-	printf("ERROR:  diagnal clEnqueueNDRangeKernel()=>%d failed\n", err);
-	return -1;
-    }
-
-    err =
-	clEnqueueReadBuffer(cmd_queue, d_m, 1, 0,
-			    matrix_dim * matrix_dim * sizeof(float), m, 0, 0,
-			    0);
-    if (err != CL_SUCCESS) {
-	printf("ERROR: clEnqueueReadBuffer  d_m (size:%d) => %d\n",
-	       matrix_dim * matrix_dim, err);
-	return -1;
-    }
-    clFinish(cmd_queue);
-    /* end of timing point */
-    stopwatch_stop(&sw);
-    printf("Time consumed(ms): %lf\n", 1000 * get_interval_by_sec(&sw));
 
     clReleaseMemObject(d_m);
 
