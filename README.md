@@ -1,6 +1,6 @@
 # Rodinia Benchmark Suite
 
-This is a fork of the Rodinia Benchmark Suite, startin from version 3.1.
+This is a fork of the Rodinia Benchmark Suite, starting from version 3.1.
 
 Since the repository contains large files not suited for GitHub, they have been
 stored in [ERDA](https://erda.dk) and you will need `git-annex` to access them.
