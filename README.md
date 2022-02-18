@@ -16,8 +16,13 @@ git annex get
 
 ## Formatting
 
-All C-like source files should be formatted with `ident`, using the style
-specified in [.indent.pro](.indent.pro).
+All C-like source files should be formatted with `indent`, using the style
+specified in [.indent.pro](.indent.pro). Example:
+
+```
+# From the root directory
+indent opencl/hotspot/hotspot.c
+```
 
 ## The old README has been included below.
 
