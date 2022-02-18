@@ -236,7 +236,7 @@ int main(int argc, char *argv[]) {
 	return -1;
     }
     char clOptions[110];
-    //  sprintf(clOptions,"-I../../src"); 
+    //  sprintf(clOptions,"-I../../src");
     sprintf(clOptions, " ");
 #ifdef BLOCK_SIZE
     sprintf(clOptions + strlen(clOptions), " -DBLOCK_SIZE=%d", BLOCK_SIZE);
@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
     clReleaseProgram(prog);
 
     //size_t local_work[3] = { 1, 1, 1 };
-    //size_t global_work[3] = {1, 1, 1 }; 
+    //size_t global_work[3] = {1, 1, 1 };
 
     cl_mem d_m;
     d_m =
